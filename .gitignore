@@ -1,0 +1,20 @@
+## 執行時產生的檔案，不進版控
+
+# upgrader.sh 每次執行都會產生的 log
+upgrader_*.log
+upgrader_extract_*/
+
+# mirror_edb_repo.sh 打包出的離線 repo
+edb_offline_repo_*.tar.gz
+edb_offline_repo_*.tar.gz.sha256
+
+# epas_patch_notes.py 的輸出檔案 / debug 用的原始 HTML
+patch_notes_*.md
+debug_page.html
+
+# Python
+__pycache__/
+*.pyc
+
+# 系統雜項
+.DS_Store
