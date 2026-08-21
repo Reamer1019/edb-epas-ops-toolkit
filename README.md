@@ -9,6 +9,8 @@
 | [`upgrader.sh`](./upgrader.sh) | EPAS 升級／安裝互動工具，支援小版本升級、大版本升級（含 EFM 叢集處理）、全新安裝三種流程 |
 | [`mirror_edb_repo.sh`](./mirror_edb_repo.sh) | 在有網路的機器上，依指定版本把 EPAS 套件打包成離線 repo，供 air-gapped 客戶端安裝/升級用 |
 | [`check_version.sh`](./check_version.sh) | 查詢某個 EPAS 大版本在目前機器的 repo 裡實際有多少小版本可抓，只查詢不下載，給容量評估用 |
+| [`who_running.sh`](./who_running.sh) | 掃描機器上目前正在跑的 Postgres/EDB instance（含對應 systemd service），EDB 與社群版分開偵測 |
+| [`efm_check.sh`](./efm_check.sh) | 唯讀檢查本機的 EFM 狀態（是否運作中、是否在 cluster 裡、角色、正在監控哪個 instance），不做任何修復動作 |
 | [`epas_patch_notes.py`](./epas_patch_notes.py) | 給定起始/結束版本，自動從 EDB 官方文件站抓取這段區間內所有版本的 release note，整理成一份 Markdown |
 
 ## upgrader.sh — 升級/安裝互動工具
@@ -45,6 +47,22 @@
 ```
 
 只查詢、不下載任何 rpm。用 `dnf repoquery --showduplicates` 列出目前機器上已設定 repo 裡的完整版本清單，並統計「不重複版本數 × 架構數」，方便在打包離線 repo 前先評估大概要花多少容量，而不是打包到一半才發現裝不下。
+
+## who_running.sh — 目前正在跑的 Postgres/EDB instance 掃描
+
+```bash
+./who_running.sh
+```
+
+透過 `/proc/<pid>/exe`、`/proc/<pid>/cmdline` 找出機器上所有正在跑的 `edb-postgres`（EDB Postgres Advanced Server）與 `postgres`（社群版）主程序，列出每一個的 PID、資料目錄、port（直接讀 `postmaster.pid` 第 4 行，不用去猜設定檔裡有沒有寫）、版本號，並列出 systemd 認得的對應 service 與其狀態。EDB 與社群版分開偵測、分開顯示，沒偵測到的區塊不會印出來；一台機器上同時跑多個 instance（不同大版本、不同 cluster）也能正確全部列出。結果會同時印在畫面上，並存一份到 `/root/pg_precheck_<時間戳記>.log`。
+
+## efm_check.sh — EFM 狀態唯讀檢查
+
+```bash
+./efm_check.sh
+```
+
+給健檢用，純粹讀取狀態，**不執行任何修復或重啟動作**。針對這台機器上每一個偵測到的 EFM cluster，依序檢查四件事：是否有 EFM 在跑、這台機器是否在這個 cluster 裡（比對 `efm.properties` 裡的 `bind.address` 與 `cluster-status` 輸出）、角色是 Primary/Standby/Witness/Idle 哪一種、目前實際在監控哪一個 Postgres instance（比對 `db.data.dir` 與目前正在跑的 process）。一台機器上有多個 EFM cluster（例如正式環境跟測試 cluster 並存）會逐一檢查、分開列出。
 
 ## epas_patch_notes.py — Release note 彙整
 
